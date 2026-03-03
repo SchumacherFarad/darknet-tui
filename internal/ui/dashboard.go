@@ -31,8 +31,9 @@ type Dashboard struct {
 	hotspotView  *HotspotView
 
 	// State
-	currentPanel int
-	panels       []tview.Primitive
+	currentPanel       int
+	panels             []tview.Primitive
+	selectedDevicePath string
 }
 
 // NewDashboard creates a new dashboard view.
@@ -156,9 +157,16 @@ func (d *Dashboard) refreshStatus() {
 }
 
 func (d *Dashboard) refreshDevices() {
+	// Save current selection
+	currentIndex := d.devicePanel.GetCurrentItem()
+	var currentInterface string
+	devices, err := d.adapter.GetAllDevices()
+	if err == nil && currentIndex >= 0 && currentIndex < len(devices) {
+		currentInterface = devices[currentIndex].Interface
+	}
+
 	d.devicePanel.Clear()
 
-	devices, err := d.adapter.GetAllDevices()
 	if err != nil {
 		return
 	}
@@ -180,6 +188,16 @@ func (d *Dashboard) refreshDevices() {
 
 		d.devicePanel.AddItem(mainText, secondaryText, 0, nil)
 	}
+
+	// Restore selection
+	targetIndex := 0
+	for i, device := range devices {
+		if device.Interface == currentInterface {
+			targetIndex = i
+			break
+		}
+	}
+	d.devicePanel.SetCurrentItem(targetIndex)
 }
 
 func (d *Dashboard) onDeviceSelected(index int) {
