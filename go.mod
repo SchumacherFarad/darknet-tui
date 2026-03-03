@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/gdamore/tcell/v2 v2.13.8
 	github.com/godbus/dbus/v5 v5.2.2
+	github.com/rivo/tview v0.42.0
 )
 
 require (
