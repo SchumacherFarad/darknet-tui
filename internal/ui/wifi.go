@@ -24,9 +24,10 @@ type WifiView struct {
 	searchInput  *tview.InputField
 
 	// State
-	device       *nmcli.Device
-	accessPoints []*nmcli.AccessPoint
-	searching    bool
+	device        *nmcli.Device
+	accessPoints  []*nmcli.AccessPoint
+	searching     bool
+	selectedBSSID string
 }
 
 // NewWifiView creates a new WiFi view.
@@ -122,6 +123,13 @@ func (w *WifiView) Refresh() {
 	// Get active access point
 	activeAP, _ := w.adapter.GetActiveAccessPoint(w.device.Path)
 
+	// Save current selection before rebuilding
+	var currentBSSID string
+	currentIndex := w.networkList.GetCurrentItem()
+	if currentIndex >= 0 && currentIndex < len(w.accessPoints) {
+		currentBSSID = w.accessPoints[currentIndex].BSSID
+	}
+
 	// Update list
 	w.networkList.Clear()
 
@@ -151,10 +159,16 @@ func (w *WifiView) Refresh() {
 		w.networkList.AddItem(mainText, secondaryText, 0, nil)
 	}
 
-	// Update details for first item
-	if len(w.accessPoints) > 0 {
-		w.onNetworkSelected(0)
+	// Restore selection - find previously selected network
+	targetIndex := 0
+	for i, ap := range w.accessPoints {
+		if ap.BSSID == currentBSSID {
+			targetIndex = i
+			break
+		}
 	}
+	w.networkList.SetCurrentItem(targetIndex)
+	w.onNetworkSelected(targetIndex)
 }
 
 func (w *WifiView) onNetworkSelected(index int) {
