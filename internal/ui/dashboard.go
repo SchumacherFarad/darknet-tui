@@ -114,7 +114,7 @@ func (d *Dashboard) setupUI() {
 	d.Flex.AddItem(d.statusBar, 1, 0, false)
 
 	// Track focusable panels
-	d.panels = []tview.Primitive{d.devicePanel, d.wifiView}
+	d.panels = []tview.Primitive{d.devicePanel, d.wifiView, d.ethernetView, d.hotspotView}
 	d.currentPanel = 1 // Start with network panel focused
 
 	// Setup device list selection handler
@@ -132,6 +132,7 @@ func (d *Dashboard) Refresh() {
 	d.refreshDevices()
 	d.wifiView.Refresh()
 	d.ethernetView.Refresh()
+	d.hotspotView.Refresh()
 }
 
 func (d *Dashboard) refreshStatus() {
@@ -167,6 +168,9 @@ func (d *Dashboard) refreshDevices() {
 
 	d.devicePanel.Clear()
 
+	// Add Hotspot as first item
+	d.devicePanel.AddItem("󰤨 Hotspot", "  Create WiFi access point", 0, nil)
+
 	if err != nil {
 		return
 	}
@@ -201,12 +205,26 @@ func (d *Dashboard) refreshDevices() {
 }
 
 func (d *Dashboard) onDeviceSelected(index int) {
-	devices, err := d.adapter.GetAllDevices()
-	if err != nil || index >= len(devices) {
+	// Handle Hotspot (index 0)
+	if index == 0 {
+		d.networkPanel.Clear()
+		d.networkPanel.SetTitle(" Hotspot ")
+		d.hotspotView.SetDevice(nil)
+		d.networkPanel.AddItem(d.hotspotView, 0, 1, true)
+		d.panels[1] = d.hotspotView
+		d.app.SetFocus(d.panels[1])
 		return
 	}
 
-	device := devices[index]
+	// Adjust for hotspot item (devices start at index 1)
+	deviceIndex := index - 1
+
+	devices, err := d.adapter.GetAllDevices()
+	if err != nil || deviceIndex >= len(devices) {
+		return
+	}
+
+	device := devices[deviceIndex]
 
 	// Clear and update network panel based on device type
 	d.networkPanel.Clear()
